@@ -41,6 +41,7 @@
 
     <script>
         let board = ['', '', '', '', '', '', '', '', ''];
+        let gameOver = false;
 
         function startNewGame() {
             fetch('/new_game', { method: 'POST' })
@@ -53,17 +54,23 @@
         }
 
         function makeMove(cellIndex) {
-            if (board[cellIndex] === '') {
-                board[cellIndex] = 'X';  // Tu zakładamy, że gracz X wykonuje ruch
-                updateBoard();
+            if (!gameOver && board[cellIndex] === '') {
                 fetch('/move', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ board: board })
+                    body: JSON.stringify({ board: board, moveIndex: cellIndex })  // Wyślij indeks klikniętego pola
                 })
                 .then(response => response.json())
                 .then(data => {
+                    board = data.board;  // Zaktualizowana plansza
+                    updateBoard();  // Aktualizacja planszy
+        
                     console.log(data.message);
+        
+                    // Jeśli ktoś wygrał, ustaw gameOver na true
+                    if (data.message.includes('wins')) {
+                        gameOver = true;
+                    }
                 });
             }
         }

@@ -29,15 +29,55 @@ def new_game():
     # Dane mogą pochodzić z requestu, np. gracze, tryb itp.
     return jsonify({'message': 'New game started!'})
 
+# Funkcja do sprawdzenia, czy jest wygrana
+def check_winner(board):
+    # Sprawdzanie wygrywających kombinacji
+    win_conditions = [(0, 1, 2), (3, 4, 5), (6, 7, 8),
+                      (0, 3, 6), (1, 4, 7), (2, 5, 8),
+                      (0, 4, 8), (2, 4, 6)]
+    for condition in win_conditions:
+        a, b, c = condition
+        if board[a] == board[b] == board[c] and board[a] != '':
+            return board[a]
+    return None
+
+# Funkcja do ruchu komputera
+def computer_move(board):
+    available_moves = [i for i, spot in enumerate(board) if spot == '']
+    if available_moves:
+        move = random.choice(available_moves)
+        board[move] = 'O'
+    return board
 
 # Endpoint do wysyłania ruchu
 @app.route('/move', methods=['POST'])
 def move():
     data = request.json
-    # Zrobimy prostą logikę, która przyjmie ruch gracza
-    # (można tu dodać logikę sprawdzania, kto wygrał)
-    return jsonify({'message': 'Move accepted', 'board': data['board']})
+    board = data['board']
+    move_index = data['moveIndex']
+    
+    # Aktualizuj planszę po ruchu użytkownika
+    if board[move_index] == '':
+        board[move_index] = 'X'  # Gracz X wykonuje ruch
 
+    # Sprawdzamy, czy gracz X wygrał po swoim ruchu
+    winner = check_winner(board)
+    if winner:
+        # print(f"Winner found: {winner}")
+        return jsonify({'message': f'Player {winner} wins!', 'board': board})
+
+    # Jeśli nie ma wygranego, komputer wykonuje ruch
+    board = computer_move(board)
+    
+    # print(f"Board after computer move: {board}")
+
+    # Sprawdzamy, czy komputer wygrał po swoim ruchu
+    winner = check_winner(board)
+    if winner:
+        # print(f"Winner found: {winner}")
+        return jsonify({'message': f'Player {winner} wins!', 'board': board})
+
+    return jsonify({'message': 'Move accepted', 'board': board})
 
 # Endpoint do zapisywania wyników
 @app.route('/save_result', methods=['POST'])
