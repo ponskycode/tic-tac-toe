@@ -24,6 +24,7 @@
 </head>
 <body>
     <h1>Tic Tac Toe</h1>
+    <p id="game-status"></p>
     <div class="board">
         <div class="cell" id="cell-0" onclick="makeMove(0)"></div>
         <div class="cell" id="cell-1" onclick="makeMove(1)"></div>
@@ -48,7 +49,9 @@
                 .then(response => response.json())
                 .then(data => {
                     board = ['', '', '', '', '', '', '', '', ''];
+                    gameOver = false;
                     updateBoard();
+                    document.getElementById('game-status').textContent = '';  // Wyczyść komunikat o stanie gry
                     console.log(data.message);
                 });
         }
@@ -64,11 +67,12 @@
                 .then(data => {
                     board = data.board;  // Zaktualizowana plansza
                     updateBoard();  // Aktualizacja planszy
+                    
+                    // Uaktualnij komunikat o stanie gry
+                    document.getElementById('game-status').textContent = data.message;
         
-                    console.log(data.message);
-        
-                    // Jeśli ktoś wygrał, ustaw gameOver na true
-                    if (data.message.includes('wins')) {
+                    // Jeśli gra się zakończyła, ustaw gameOver na true
+                    if (data.gameOver) {
                         gameOver = true;
                     }
                 });

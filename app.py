@@ -63,21 +63,21 @@ def move():
     # Sprawdzamy, czy gracz X wygrał po swoim ruchu
     winner = check_winner(board)
     if winner:
-        # print(f"Winner found: {winner}")
-        return jsonify({'message': f'Player {winner} wins!', 'board': board})
+        return jsonify({'message': f'Player {winner} wins!', 'board': board, 'gameOver': True})
 
     # Jeśli nie ma wygranego, komputer wykonuje ruch
     board = computer_move(board)
-    
-    # print(f"Board after computer move: {board}")
 
     # Sprawdzamy, czy komputer wygrał po swoim ruchu
     winner = check_winner(board)
     if winner:
-        # print(f"Winner found: {winner}")
-        return jsonify({'message': f'Player {winner} wins!', 'board': board})
+        return jsonify({'message': f'Player {winner} wins!', 'board': board, 'gameOver': True})
 
-    return jsonify({'message': 'Move accepted', 'board': board})
+    # Sprawdzamy, czy jest remis (brak pustych pól)
+    if '' not in board:
+        return jsonify({'message': 'It\'s a draw!', 'board': board, 'gameOver': True})
+
+    return jsonify({'message': 'Move accepted', 'board': board, 'gameOver': False})
 
 # Endpoint do zapisywania wyników
 @app.route('/save_result', methods=['POST'])
