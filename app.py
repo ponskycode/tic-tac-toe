@@ -16,22 +16,23 @@ class Player(db.Model):
     def __repr__(self):
         return f'<Player {self.username}>'
 
-
-# Endpoint do renderowania strony głównej
+# Endpoint dla strony startowej (formularz do wpisania nicku)
 @app.route('/')
-def index():
-    return render_template('index.html')
+def start():
+    return render_template('start.html')
 
+# Endpoint do strony gry
+@app.route('/game')
+def game():
+    return render_template('index.html')
 
 # Endpoint do rozpoczęcia nowej gry
 @app.route('/new_game', methods=['POST'])
 def new_game():
-    # Dane mogą pochodzić z requestu, np. gracze, tryb itp.
     return jsonify({'message': 'New game started!'})
 
 # Funkcja do sprawdzenia, czy jest wygrana
 def check_winner(board):
-    # Sprawdzanie wygrywających kombinacji
     win_conditions = [(0, 1, 2), (3, 4, 5), (6, 7, 8),
                       (0, 3, 6), (1, 4, 7), (2, 5, 8),
                       (0, 4, 8), (2, 4, 6)]
@@ -55,25 +56,21 @@ def move():
     data = request.json
     board = data['board']
     move_index = data['moveIndex']
+    player_name = data['playerName']  # Odbieramy nazwę gracza
     
-    # Aktualizuj planszę po ruchu użytkownika
     if board[move_index] == '':
         board[move_index] = 'X'  # Gracz X wykonuje ruch
 
-    # Sprawdzamy, czy gracz X wygrał po swoim ruchu
     winner = check_winner(board)
     if winner:
-        return jsonify({'message': f'Player {winner} wins!', 'board': board, 'gameOver': True})
+        return jsonify({'message': f'{player_name} wins!', 'board': board, 'gameOver': True})
 
-    # Jeśli nie ma wygranego, komputer wykonuje ruch
     board = computer_move(board)
 
-    # Sprawdzamy, czy komputer wygrał po swoim ruchu
     winner = check_winner(board)
     if winner:
-        return jsonify({'message': f'Player {winner} wins!', 'board': board, 'gameOver': True})
+        return jsonify({'message': 'Komputer wins!', 'board': board, 'gameOver': True})
 
-    # Sprawdzamy, czy jest remis (brak pustych pól)
     if '' not in board:
         return jsonify({'message': 'It\'s a draw!', 'board': board, 'gameOver': True})
 
@@ -93,14 +90,12 @@ def save_result():
     db.session.commit()
     return jsonify({'message': 'Result saved!'})
 
-
 # Endpoint do wyświetlania wyników
 @app.route('/leaderboard', methods=['GET'])
 def leaderboard():
     players = Player.query.order_by(Player.wins.desc()).all()
     results = [{'username': player.username, 'wins': player.wins} for player in players]
     return jsonify(results)
-
 
 if __name__ == '__main__':
     with app.app_context():

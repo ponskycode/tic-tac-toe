@@ -1,4 +1,3 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,7 +23,7 @@
 </head>
 <body>
     <h1>Tic Tac Toe</h1>
-    <p id="game-status"></p>
+    <p id="game-status"></p>  <!-- Element do wyświetlania statusu gry -->
     <div class="board">
         <div class="cell" id="cell-0" onclick="makeMove(0)"></div>
         <div class="cell" id="cell-1" onclick="makeMove(1)"></div>
@@ -43,6 +42,7 @@
     <script>
         let board = ['', '', '', '', '', '', '', '', ''];
         let gameOver = false;
+        let playerName = localStorage.getItem('playerName') || 'Player';  // Pobierz nazwę gracza z localStorage
 
         function startNewGame() {
             fetch('/new_game', { method: 'POST' })
@@ -61,7 +61,7 @@
                 fetch('/move', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ board: board, moveIndex: cellIndex })  // Wyślij indeks klikniętego pola
+                    body: JSON.stringify({ board: board, moveIndex: cellIndex, playerName: playerName })  // Przekazujemy nazwę gracza
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -70,7 +70,7 @@
                     
                     // Uaktualnij komunikat o stanie gry
                     document.getElementById('game-status').textContent = data.message;
-        
+
                     // Jeśli gra się zakończyła, ustaw gameOver na true
                     if (data.gameOver) {
                         gameOver = true;

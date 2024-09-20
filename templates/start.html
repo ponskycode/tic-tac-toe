@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start Game</title>
+</head>
+<body>
+    <h1>Welcome to Tic Tac Toe</h1>
+    <form id="start-form">
+        <label for="player-name">Enter your name:</label>
+        <input type="text" id="player-name" name="player-name" required>
+        <button type="submit">Start Game</button>
+    </form>
+
+    <script>
+        document.getElementById('start-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const playerName = document.getElementById('player-name').value;
+            localStorage.setItem('playerName', playerName);
+            window.location.href = '/game';  // Przekierowanie do strony z grą
+        });
+    </script>
+</body>
+</html>
