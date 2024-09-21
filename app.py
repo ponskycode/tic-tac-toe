@@ -11,7 +11,9 @@ db = SQLAlchemy(app)
 class Player(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    wins = db.Column(db.Integer, default=0)
+    ilosc_wynikow = db.Column(db.Integer, default=0)  # Liczba rozegranych gier
+    ilosc_remisow = db.Column(db.Integer, default=0)  # Liczba remisów
+    ilosc_wygranych = db.Column(db.Integer, default=0)  # Liczba wygranych
 
     def __repr__(self):
         return f'<Player {self.username}>'
@@ -56,45 +58,58 @@ def move():
     data = request.json
     board = data['board']
     move_index = data['moveIndex']
-    player_name = data['playerName']  # Odbieramy nazwę gracza
+    player_name = data['playerName']  # Pobieramy nazwę gracza
+    
+    # Szukamy gracza w bazie danych
+    player = Player.query.filter_by(username=player_name).first()
+    
+    # Jeśli gracza nie ma w bazie, dodajemy go
+    if not player:
+        player = Player(username=player_name)
+        db.session.add(player)
+        db.session.commit()
     
     if board[move_index] == '':
         board[move_index] = 'X'  # Gracz X wykonuje ruch
 
+    # Sprawdzamy, czy gracz wygrał
     winner = check_winner(board)
     if winner:
-        return jsonify({'message': f'{player_name} wins!', 'board': board, 'gameOver': True})
+        player.ilosc_wynikow += 1  # Zwiększamy liczbę rozegranych gier
+        if winner == 'X':
+            player.ilosc_wygranych += 1  # Zwiększamy liczbę wygranych
+            db.session.commit()
+            return jsonify({'message': f'{player_name} wins!', 'board': board, 'gameOver': True})
+        elif winner == 'O':
+            db.session.commit()  # Komputer wygrał, więc tylko zapisujemy grę
+            return jsonify({'message': 'Komputer wins!', 'board': board, 'gameOver': True})
 
+    # Jeśli nie ma wygranego, komputer wykonuje ruch
     board = computer_move(board)
 
+    # Sprawdzamy, czy komputer wygrał po swoim ruchu
     winner = check_winner(board)
     if winner:
-        return jsonify({'message': 'Komputer wins!', 'board': board, 'gameOver': True})
+        player.ilosc_wynikow += 1  # Zwiększamy liczbę rozegranych gier
+        if winner == 'O':
+            db.session.commit()  # Komputer wygrał, tylko zapisujemy
+            return jsonify({'message': 'Komputer wins!', 'board': board, 'gameOver': True})
 
+    # Sprawdzamy, czy jest remis
     if '' not in board:
+        player.ilosc_wynikow += 1  # Zwiększamy liczbę rozegranych gier
+        player.ilosc_remisow += 1  # Zwiększamy liczbę remisów
+        db.session.commit()
         return jsonify({'message': 'It\'s a draw!', 'board': board, 'gameOver': True})
 
+    db.session.commit()  # Zapisujemy stan gry, jeśli gra się toczy dalej
     return jsonify({'message': 'Move accepted', 'board': board, 'gameOver': False})
-
-# Endpoint do zapisywania wyników
-@app.route('/save_result', methods=['POST'])
-def save_result():
-    data = request.json
-    username = data.get('username')
-    player = Player.query.filter_by(username=username).first()
-    if player:
-        player.wins += 1
-    else:
-        player = Player(username=username, wins=1)
-        db.session.add(player)
-    db.session.commit()
-    return jsonify({'message': 'Result saved!'})
 
 # Endpoint do wyświetlania wyników
 @app.route('/leaderboard', methods=['GET'])
 def leaderboard():
-    players = Player.query.order_by(Player.wins.desc()).all()
-    results = [{'username': player.username, 'wins': player.wins} for player in players]
+    players = Player.query.order_by(Player.ilosc_wygranych.desc()).all()  # Sortowanie po liczbie wygranych
+    results = [{'username': player.username, 'ilosc_wygranych': str(player.ilosc_wygranych), 'ilosc_remisow': str(player.ilosc_remisow), 'ilosc_wynikow': str(player.ilosc_wynikow)} for player in players]
     return jsonify(results)
 
 if __name__ == '__main__':

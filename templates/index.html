@@ -36,24 +36,36 @@
         <div class="cell" id="cell-8" onclick="makeMove(8)"></div>
     </div>
     <button onclick="startNewGame()">Start New Game</button>
+
     <h2>Leaderboard</h2>
+
+    <!-- Dodajemy opis kolumn listy -->
+    <p>Nickname | Wins | Ties | Games</p>
+
+    <!-- Miejsce na listę leaderboard -->
     <ul id="leaderboard"></ul>
 
+    <!-- Skrypt JavaScript -->
     <script>
         let board = ['', '', '', '', '', '', '', '', ''];
         let gameOver = false;
         let playerName = localStorage.getItem('playerName') || 'Player';  // Pobierz nazwę gracza z localStorage
 
         function startNewGame() {
-            fetch('/new_game', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    board = ['', '', '', '', '', '', '', '', ''];
-                    gameOver = false;
-                    updateBoard();
-                    document.getElementById('game-status').textContent = '';  // Wyczyść komunikat o stanie gry
-                    console.log(data.message);
-                });
+            fetch('/new_game', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playerName: playerName })  // Wysyłamy nazwę gracza
+            })
+            .then(response => response.json())
+            .then(data => {
+                board = ['', '', '', '', '', '', '', '', ''];
+                gameOver = false
+                updateBoard();
+                loadLeaderboard();
+                document.getElementById('game-status').textContent = '';  // Wyczyść komunikat o stanie gry
+                console.log(data.message);
+            });
         }
 
         function makeMove(cellIndex) {
@@ -61,18 +73,17 @@
                 fetch('/move', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ board: board, moveIndex: cellIndex, playerName: playerName })  // Przekazujemy nazwę gracza
+                    body: JSON.stringify({ board: board, moveIndex: cellIndex, playerName: playerName })
                 })
                 .then(response => response.json())
                 .then(data => {
                     board = data.board;  // Zaktualizowana plansza
                     updateBoard();  // Aktualizacja planszy
-                    
-                    // Uaktualnij komunikat o stanie gry
+        
                     document.getElementById('game-status').textContent = data.message;
-
-                    // Jeśli gra się zakończyła, ustaw gameOver na true
-                    if (data.gameOver) {
+        
+                    // Jeśli ktoś wygrał, ustaw gameOver na true
+                    if (data.message.includes('wins')) {
                         gameOver = true;
                     }
                 });
@@ -85,15 +96,17 @@
             }
         }
 
+        // Funkcja do wczytania leaderboardu i wypełnienia listy
         function loadLeaderboard() {
             fetch('/leaderboard')
                 .then(response => response.json())
                 .then(data => {
                     const leaderboard = document.getElementById('leaderboard');
-                    leaderboard.innerHTML = '';
+                    leaderboard.innerHTML = '';  // Wyczyść istniejące dane
                     data.forEach(player => {
                         const li = document.createElement('li');
-                        li.textContent = `${player.username}: ${player.wins} wins`;
+                        // Wyświetlamy dane w postaci: Nickname Wins Ties Games
+                        li.textContent = `${player.username} ${player.ilosc_wygranych} ${player.ilosc_remisow} ${player.ilosc_wynikow}`;
                         leaderboard.appendChild(li);
                     });
                 });
